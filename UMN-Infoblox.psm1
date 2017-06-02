@@ -289,7 +289,6 @@ Function New-InfobloxHost{
         [ValidateNotNullOrEmpty()]
         [string]$new_IPv4,
 
-        [ValidateNotNullOrEmpty()]
         [string]$new_IPv6,
 
         [ValidateNotNullOrEmpty()]
@@ -297,9 +296,17 @@ Function New-InfobloxHost{
     )
     $host_name = $host_name.ToLower()
     $uri = "$uriBase/record:host"
-    $JSON = @{name=$host_name;ipv4addrs=@(@{ipv4addr=$new_IPv4;configure_for_dhcp=$true;match_client="RESERVED"});
-        ipv6addrs=@(@{ipv6addr=$new_IPv6});
-        extattrs=@{Custom1=@{value=$ipv4Net};Custom2=@{value="default 2 hour"}}} | ConvertTo-Json
+    if ($new_IPv6)
+    {
+        $JSON = @{name=$host_name;ipv4addrs=@(@{ipv4addr=$new_IPv4;configure_for_dhcp=$true;match_client="RESERVED"});
+            ipv6addrs=@(@{ipv6addr=$new_IPv6});
+            extattrs=@{Custom1=@{value=$ipv4Net};Custom2=@{value="default 2 hour"}}} | ConvertTo-Json
+    }
+    else
+    {
+        $JSON = @{name=$host_name;ipv4addrs=@(@{ipv4addr=$new_IPv4;configure_for_dhcp=$true;match_client="RESERVED"});
+            extattrs=@{Custom1=@{value=$ipv4Net};Custom2=@{value="default 2 hour"}}} | ConvertTo-Json
+    }
     Invoke-RestMethod -Uri $uri -Body $JSON -ContentType "application/json" -Method Post -WebSession $cookie
 
 }

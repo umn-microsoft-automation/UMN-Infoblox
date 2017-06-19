@@ -17,6 +17,64 @@
 # It is assumed that a Connection has already been established and the cookie is being passed to many of these functions.
 # Use 'Connect-Infoblox' to return a $cookie --
 
+#region Connect-Infoblox
+Function Connect-Infoblox{
+<#
+    .SYNOPSIS
+	    Core function - retrieve cookie for API access to infoblox
+    .DESCRIPTION
+	
+    .PARAMETER InfobloxCred
+        PS credential of user that has access
+
+    .PARAMETER uriBase
+        FQDN of infoblox host including version, example 'https://myhost.mycompany.com/wapi/v1.7.1'
+
+    .PARAMETER SkipCertificateCheck
+        Ignore bad SSL Certificates
+
+    .EXAMPLE
+	    Connect-Infoblox -InfobloxCreds $infobloxCreds -uriBase $uriBase
+    .NOTES
+	    For legacy automation systems dealing with cookies - 
+        -UseBasicParsing is included on the InvokeWebRequest - needed parsing for Orchestrator
+#>
+
+
+    [CmdletBinding()]
+    param(
+
+        [ValidateNotNullOrEmpty()]
+        [System.Management.Automation.PSCredential]$InfobloxCreds,
+
+        [parameter(Mandatory)]
+        [string]$uriBase,
+
+        [switch]$SkipCertificateCheck
+    )
+     
+     if ($SkipCertificateCheck -and $PSVersionTable.PSVersion.Major -lt 6){
+add-type @"
+    using System.Net;
+    using System.Security.Cryptography.X509Certificates;
+    public class TrustAllCertsPolicy : ICertificatePolicy {
+        public bool CheckValidationResult(
+            ServicePoint srvPoint, X509Certificate certificate,
+            WebRequest request, int certificateProblem) {
+            return true;
+        }
+    }
+"@
+            [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+    }
+            $uri  = "$uriBase/grid"
+            if ($SkipCertificateCheck -and $PSVersionTable.PSVersion.Major -eq 6){$grid = Invoke-WebRequest -uri $uri -Method Get -Credential $InfobloxCreds -SessionVariable cookie -UseBasicParsing -SkipCertificateCheck}
+            else{$grid = Invoke-WebRequest -uri $uri -Method Get -Credential $InfobloxCreds -SessionVariable cookie -UseBasicParsing}
+            return ($cookie)
+}
+#endregion
+
+#region Get-InfobloxHost
 Function Get-InfobloxHost{
 
 <#
@@ -47,45 +105,9 @@ Function Get-InfobloxHost{
     $uri  = "$uriBase/record:host?name=$host_name"
     Invoke-RestMethod -uri $uri -Method Get -WebSession $cookie
 }
+#endregion
 
-
-Function Remove-InfobloxHost{
-<#
-.SYNOPSIS
-	Remove Host Record
-.DESCRIPTION
-	
-.EXAMPLE
-	Remove-InfobloxHost -cookie $cookie -uriBase $uriBase -host_name $host_name
-.NOTES
-	General notes
-#>
-
-  ## 
-
-    [CmdletBinding()]
-    Param
-    (
-        [ValidateNotNullOrEmpty()]
-        [Microsoft.PowerShell.Commands.WebRequestSession]$cookie,
-
-        [ValidateNotNullOrEmpty()]
-        [string]$uriBase,
-
-        [ValidateNotNullOrEmpty()]
-        [string]$host_name
-    )
-    $host_name = $host_name.ToLower()
-    ## Validate Host exists
-    $host_ref = (Get-InfobloxHost -cookie $cookie -uriBase $uriBase -host_name $host_name)._ref
-    if ($host_ref -eq $null){throw "Infoblox Host Doesn't Exist"}    
-    $uri  = "$uriBase/$host_ref"
-    #validate response
-    if ((Invoke-RestMethod -uri $uri -Method Delete -WebSession $cookie) -ne $host_ref){throw "Infoblox Delete Failed"}
-
-}
-
-
+#region Get-InfobloxIPv4Net
 Function Get-InfobloxIPv4Net{
 <#
 .SYNOPSIS
@@ -113,8 +135,9 @@ Function Get-InfobloxIPv4Net{
     $uri = "$uriBase/network?network=$ipv4Net"
     Invoke-RestMethod -uri $uri -Method Get -WebSession $cookie
 }
+#endregion
 
-
+#region Get-InfobloxIPv4IP
 Function Get-InfobloxIPv4IP{
 <#
 .SYNOPSIS
@@ -145,8 +168,9 @@ Function Get-InfobloxIPv4IP{
     Invoke-RestMethod -uri $uri -Method Get -WebSession $cookie
 
 }
+#endregion
 
-
+#region Get-InfobloxIPv4IPs
 Function Get-InfobloxIPv4IPs{
 <#
 .SYNOPSIS
@@ -176,8 +200,9 @@ Function Get-InfobloxIPv4IPs{
     Invoke-RestMethod -uri $uri -Method Get -WebSession $cookie
 
 }
+#endregion
 
-
+#region Get-InfobloxIPv4Available
 Function Get-InfobloxIPv4Available{
 
 <#
@@ -225,8 +250,9 @@ Function Get-InfobloxIPv4Available{
     if(-not $ipFound){return "unable to find IPv4 Address, exiting"}
 
 }
+#endregion
 
-
+#region Get-InfobloxIPv6IP
 Function Get-InfobloxIPv6IP{
 <#
 .SYNOPSIS
@@ -257,8 +283,45 @@ Function Get-InfobloxIPv6IP{
     Invoke-RestMethod -uri $uri -Method Get -WebSession $cookie
 
 }
+#endregion
 
+#region Get-InfobloxIPbyMac
+function Get-InfobloxIPbyMac {
+<#
+.SYNOPSIS
+	Get IP information by MAC address
+.DESCRIPTION
+	
+.EXAMPLE
+	Get-InfobloxIPbyMac -cookie $cookie -uriBase $uriBase -ipv4net $ipv4net -mac $mac
+.NOTES
+#>
+    
+    [CmdletBinding()]
+    param(
 
+        [ValidateNotNullOrEmpty()]
+        [Microsoft.PowerShell.Commands.WebRequestSession]$cookie,
+
+        [string]$uriBase,
+
+        [ValidateNotNullOrEmpty()]
+        [string]$ipv4Net,
+
+        [ValidatePattern("([a-zA-Z0-9]{2}:){5}[a-zA-Z0-9]{2}")]
+        [string]$mac
+
+    )
+
+    $uri = "$uriBase/ipv4address?network=$ipv4Net&mac_address=$mac"
+    $ipv4IPs =  Invoke-RestMethod -uri $uri -Method Get -WebSession $cookie
+    $activeIP = $ipv4IPs | Where-Object {$_.lease_state -eq 'ACTIVE'}
+    if ($activeIP -ne $null){return ($activeIP.ip_address)}
+    else{throw "Failed to get single IP info $ipv4IPs"}
+}
+#endregion
+
+#region New-InfobloxHost
 Function New-InfobloxHost{
 
 <#
@@ -310,8 +373,9 @@ Function New-InfobloxHost{
     Invoke-RestMethod -Uri $uri -Body $JSON -ContentType "application/json" -Method Post -WebSession $cookie
 
 }
+#endregion
 
-
+#region New-InfobloxDhcpReservation
 Function New-InfobloxDhcpReservation{
 <#
 .SYNOPSIS
@@ -351,82 +415,44 @@ Function New-InfobloxDhcpReservation{
     Invoke-RestMethod -Uri $uri -Body $JSON -ContentType "application/json" -Method Post -WebSession $cookie
 
 }
+#endregion
 
-
-Function Connect-Infoblox{
+#region Remove-InfobloxHost
+Function Remove-InfobloxHost{
 <#
 .SYNOPSIS
-	Core function - retrieve cookie for API access to infoblox
+	Remove Host Record
 .DESCRIPTION
 	
 .EXAMPLE
-	Connect-Infoblox -InfobloxCreds $infobloxCreds -uriBase $uriBase
+	Remove-InfobloxHost -cookie $cookie -uriBase $uriBase -host_name $host_name
 .NOTES
-	For legacy automation systems dealing with cookies - 
-    -UseBasicParsing is included on the InvokeWebRequest - needed parsing for Orchestrator
+	General notes
 #>
 
+  ## 
 
     [CmdletBinding()]
-    param(
-
-        [ValidateNotNullOrEmpty()]
-        [System.Management.Automation.PSCredential]$InfobloxCreds,
-
-        [string]$uriBase
-
-    )
-        
-add-type @"
-    using System.Net;
-    using System.Security.Cryptography.X509Certificates;
-    public class TrustAllCertsPolicy : ICertificatePolicy {
-        public bool CheckValidationResult(
-            ServicePoint srvPoint, X509Certificate certificate,
-            WebRequest request, int certificateProblem) {
-            return true;
-        }
-    }
-"@
-            [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-            $uri  = "$uriBase/grid"
-            $grid = Invoke-WebRequest -uri $uri -Method Get -Credential $InfobloxCreds -SessionVariable cookie -UseBasicParsing
-            return ($cookie)
-}
-
-
-function Get-InfobloxIPbyMac {
-<#
-.SYNOPSIS
-	Get IP information by MAC address
-.DESCRIPTION
-	
-.EXAMPLE
-	Get-InfobloxIPbyMac -cookie $cookie -uriBase $uriBase -ipv4net $ipv4net -mac $mac
-.NOTES
-#>
-    
-    [CmdletBinding()]
-    param(
-
+    Param
+    (
         [ValidateNotNullOrEmpty()]
         [Microsoft.PowerShell.Commands.WebRequestSession]$cookie,
 
+        [ValidateNotNullOrEmpty()]
         [string]$uriBase,
 
         [ValidateNotNullOrEmpty()]
-        [string]$ipv4Net,
-
-        [ValidatePattern("([a-zA-Z0-9]{2}:){5}[a-zA-Z0-9]{2}")]
-        [string]$mac
-
+        [string]$host_name
     )
+    $host_name = $host_name.ToLower()
+    ## Validate Host exists
+    $host_ref = (Get-InfobloxHost -cookie $cookie -uriBase $uriBase -host_name $host_name)._ref
+    if ($host_ref -eq $null){throw "Infoblox Host Doesn't Exist"}    
+    $uri  = "$uriBase/$host_ref"
+    #validate response
+    if ((Invoke-RestMethod -uri $uri -Method Delete -WebSession $cookie) -ne $host_ref){throw "Infoblox Delete Failed"}
 
-    $uri = "$uriBase/ipv4address?network=$ipv4Net&mac_address=$mac"
-    $ipv4IPs =  Invoke-RestMethod -uri $uri -Method Get -WebSession $cookie
-    $activeIP = $ipv4IPs | Where-Object {$_.lease_state -eq 'ACTIVE'}
-    if ($activeIP -ne $null){return ($activeIP.ip_address)}
-    else{throw "Failed to get single IP info $ipv4IPs"}
 }
+#endregion
 
 Export-ModuleMember -Function *

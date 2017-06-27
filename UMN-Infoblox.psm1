@@ -238,13 +238,8 @@ Function Get-InfobloxIPv4Available{
     foreach ($ip in $ipv4IPs){
         if (($ip.names).count -eq 1 -and $ip.types -notcontains "HOST" -and $ip.lease_state -eq "FREE") # IF it returns a single entry this should be the bulk host.  < 1 = router, >1 its tied to host record so don't touch it
         {
-            ## ONE LAST CHECK just to be sure, match on bulk host name
-            if ($ip.names -match "x-\d{1,3}-\d{1,3}-\d{1,3}-\d{1,3}\.$domainSuffix")
-            {
-                #$new_IPv4 = $ip.ip_address
-                $ipFound = $true 
-                return $ip.ip_address
-            }
+            $ipFound = $true 
+            return $ip.ip_address
         }
     }
     if(-not $ipFound){return "unable to find IPv4 Address, exiting"}

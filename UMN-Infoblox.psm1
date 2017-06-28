@@ -236,7 +236,7 @@ Function Get-InfobloxIPv4Available{
     $ipv4IPs = Get-InfobloxIPv4IPs -cookie $cookie -uriBase $uriBase -ipv4Net $ipv4Net
     $ipFound = $false
     foreach ($ip in $ipv4IPs){
-        if (($ip.names).count -eq 1 -and $ip.types -notcontains "HOST" -and $ip.lease_state -eq "FREE") # IF it returns a single entry this should be the bulk host.  < 1 = router, >1 its tied to host record so don't touch it
+        if ($ip.types -notcontains "HOST" -and $ip.lease_state -eq "FREE") # IF it returns a single entry this should be the bulk host.  < 1 = router, >1 its tied to host record so don't touch it
         {
             $ipFound = $true 
             return $ip.ip_address

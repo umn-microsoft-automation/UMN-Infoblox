@@ -102,7 +102,7 @@ Function Get-InfobloxHost{
     )
     
     $host_name = $host_name.ToLower()
-    $uri  = "$uriBase/record:host?name=$host_name"
+    $uri  = "$uriBase/record:host?name=$host_name&_return_fields=aliases,ipv4addrs"
     Invoke-RestMethod -uri $uri -Method Get -WebSession $cookie
 }
 #endregion
@@ -441,8 +441,12 @@ Function Remove-InfobloxHost{
     )
     $host_name = $host_name.ToLower()
     ## Validate Host exists
-    $host_ref = (Get-InfobloxHost -cookie $cookie -uriBase $uriBase -host_name $host_name)._ref
-    if ($host_ref -eq $null){throw "Infoblox Host Doesn't Exist"}    
+    $ibHost = Get-InfobloxHost -cookie $cookie -uriBase $uriBase -host_name $host_name
+    if ($ibHost -eq $null){throw "Infoblox Host Doesn't Exist"}
+    # Aliases must be removed before removing the host record
+    if ($ibHost.aliases){}## waiting for enough permissions to see all the aliases and remove them
+    $host_ref = $ibHost._ref
+       
     $uri  = "$uriBase/$host_ref"
     #validate response
     if ((Invoke-RestMethod -uri $uri -Method Delete -WebSession $cookie) -ne $host_ref){throw "Infoblox Delete Failed"}

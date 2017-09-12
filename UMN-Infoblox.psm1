@@ -74,6 +74,38 @@ add-type @"
 }
 #endregion
 
+#region Get-InfobloxAlias
+Function Get-InfobloxAlias{
+
+<#
+.SYNOPSIS
+	Get Alias by FQDN
+.DESCRIPTION
+	
+.EXAMPLE
+	Get-InfobloxAlias -cookie $cookie -uriBase $uriBase -alias $alias
+.NOTES
+	General notes
+#>
+    
+    [CmdletBinding()]
+    Param
+    (
+        [ValidateNotNullOrEmpty()]
+        [Microsoft.PowerShell.Commands.WebRequestSession]$cookie,
+
+        [ValidateNotNullOrEmpty()]
+        [string]$uriBase,
+
+        [ValidateNotNullOrEmpty()]
+        [string]$alias
+    )
+    
+    $uri  = "$uriBase/record:cname?name:=$alias"
+    Invoke-RestMethod -uri $uri -Method Get -WebSession $cookie
+}
+#endregion
+
 #region Get-InfobloxHost
 Function Get-InfobloxHost{
 

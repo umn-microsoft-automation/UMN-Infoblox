@@ -108,18 +108,16 @@ Function Get-InfobloxAlias{
 
 #region Get-InfobloxHost
 Function Get-InfobloxHost{
-
 <#
-.SYNOPSIS
-	Get host by FQDN
-.DESCRIPTION
-	
-.EXAMPLE
-	Get-InfobloxHost -cookie $cookie -uriBase $uriBase -host_name $host_name
-.NOTES
-	General notes
-#>
-    
+    .SYNOPSIS
+        Get host by FQDN
+    .DESCRIPTION
+        Get host by FQDN
+    .EXAMPLE
+        Get-InfobloxHost -cookie $cookie -uriBase $uriBase -host_name $host_name
+    .NOTES
+        General notes
+#>    
     [CmdletBinding()]
     Param
     (

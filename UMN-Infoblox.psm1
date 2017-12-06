@@ -74,16 +74,16 @@ add-type @"
 }
 #endregion
 
-#region Get-InfobloxHost
-Function Get-InfobloxHost{
+#region Get-InfobloxAlias
+Function Get-InfobloxAlias{
 
 <#
 .SYNOPSIS
-	Get host by FQDN
+	Get Alias by FQDN
 .DESCRIPTION
 	
 .EXAMPLE
-	Get-InfobloxHost -cookie $cookie -uriBase $uriBase -host_name $host_name
+	Get-InfobloxAlias -cookie $cookie -uriBase $uriBase -alias $alias
 .NOTES
 	General notes
 #>
@@ -98,11 +98,41 @@ Function Get-InfobloxHost{
         [string]$uriBase,
 
         [ValidateNotNullOrEmpty()]
+        [string]$alias
+    )
+    
+    $uri  = "$uriBase/record:cname?name:=$alias"
+    Invoke-RestMethod -uri $uri -Method Get -WebSession $cookie
+}
+#endregion
+
+#region Get-InfobloxHost
+Function Get-InfobloxHost{
+<#
+    .SYNOPSIS
+        Get host by FQDN
+    .DESCRIPTION
+        Get host by FQDN
+    .EXAMPLE
+        Get-InfobloxHost -cookie $cookie -uriBase $uriBase -host_name $host_name
+    .NOTES
+        General notes
+#>    
+    [CmdletBinding()]
+    Param
+    (
+        [ValidateNotNullOrEmpty()]
+        [Microsoft.PowerShell.Commands.WebRequestSession]$cookie,
+
+        [ValidateNotNullOrEmpty()]
+        [string]$uriBase,
+
+        [ValidateNotNullOrEmpty()]
         [string]$host_name
     )
     
     $host_name = $host_name.ToLower()
-    $uri  = "$uriBase/record:host?name=$host_name"
+    $uri  = "$uriBase/record:host?name=$host_name&_return_fields=aliases,ipv4addrs"
     Invoke-RestMethod -uri $uri -Method Get -WebSession $cookie
 }
 #endregion
@@ -441,8 +471,12 @@ Function Remove-InfobloxHost{
     )
     $host_name = $host_name.ToLower()
     ## Validate Host exists
-    $host_ref = (Get-InfobloxHost -cookie $cookie -uriBase $uriBase -host_name $host_name)._ref
-    if ($host_ref -eq $null){throw "Infoblox Host Doesn't Exist"}    
+    $ibHost = Get-InfobloxHost -cookie $cookie -uriBase $uriBase -host_name $host_name
+    if ($ibHost -eq $null){throw "Infoblox Host Doesn't Exist"}
+    # Aliases must be removed before removing the host record
+    if ($ibHost.aliases){}## waiting for enough permissions to see all the aliases and remove them
+    $host_ref = $ibHost._ref
+       
     $uri  = "$uriBase/$host_ref"
     #validate response
     if ((Invoke-RestMethod -uri $uri -Method Delete -WebSession $cookie) -ne $host_ref){throw "Infoblox Delete Failed"}

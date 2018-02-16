@@ -312,15 +312,15 @@ Function Get-InfobloxIPv6IP{
 
 #region Get-InfobloxIPbyMac
 function Get-InfobloxIPbyMac {
-<#
-.SYNOPSIS
-	Get IP information by MAC address
-.DESCRIPTION
-	
-.EXAMPLE
-	Get-InfobloxIPbyMac -cookie $cookie -uriBase $uriBase -ipv4net $ipv4net -mac $mac
-.NOTES
-#>
+    <#
+    .SYNOPSIS
+        Get IP information by MAC address
+    .DESCRIPTION
+        
+    .EXAMPLE
+        Get-InfobloxIPbyMac -cookie $cookie -uriBase $uriBase -ipv4net $ipv4net -mac $mac
+    .NOTES
+    #>
     
     [CmdletBinding()]
     param(

@@ -2,6 +2,9 @@
  
  # Releases
 
+ # 1.1.1 - 7-19-18
+ Add function to update IPv6 AAAA record for existing host record.
+
  # 1.1.0 - 2-16-18
  Add Code Signing and Docs
 

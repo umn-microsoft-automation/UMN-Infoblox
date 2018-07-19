@@ -132,7 +132,7 @@ Function Get-InfobloxHost{
     )
     
     $host_name = $host_name.ToLower()
-    $uri  = "$uriBase/record:host?name=$host_name&_return_fields=aliases,ipv4addrs"
+    $uri  = "$uriBase/record:host?name=$host_name&_return_fields=aliases,ipv4addrs,ipv6addrs"
     Invoke-RestMethod -uri $uri -Method Get -WebSession $cookie
 }
 #endregion
@@ -481,6 +481,67 @@ Function Remove-InfobloxHost{
     #validate response
     if ((Invoke-RestMethod -uri $uri -Method Delete -WebSession $cookie) -ne $host_ref){throw "Infoblox Delete Failed"}
 
+}
+#endregion
+
+#region Set-InfobloxHostIPv6
+Function Set-InfobloxHostIPv6 {
+    <#
+        .SYNOPSIS
+            Set IPv6 Address of Host Record
+
+        .DESCRIPTION
+            Set IPv6 Address of Host Record
+        
+        .PARAMETER cookie
+            See connect-infoblox function to get authentication cookie
+
+        .PARAMETER host_name
+            The FQDN Host name in infoblox to be updated.
+            
+        .PARAMETER ipv6address
+            The IPv6 address to be set for an AAAA record.
+
+        .PARAMETER uriBase
+            The base URI for your infoblox instance, such as https://fqdn/wapi/version
+
+        .EXAMPLE
+            Set-InfobloxHostIPv6 -cookie $cookie -uriBase $uriBase -host_name $host_name -ipv6Address
+        
+        .NOTES
+            General notes
+    #>    
+        [CmdletBinding()]
+        Param
+        (
+            [ValidateNotNullOrEmpty()]
+            [Microsoft.PowerShell.Commands.WebRequestSession]$cookie,
+            
+            [ValidateNotNullOrEmpty()]
+            [string]$ipv6Address,
+
+            [ValidateNotNullOrEmpty()]
+            [string]$uriBase,
+    
+            [ValidateNotNullOrEmpty()]
+            [string]$host_name
+        )
+    
+    Begin 
+        {
+            $hostinfo = get-infobloxhost -cookie $cookie -uriBase $uriBase -host_name $host_name
+            $hostref = $hostinfo._ref
+            $uri = "$uriBase/$hostref"
+            $JSON = @{ipv6addrs=@(@{ipv6addr=$ipv6Address})} | ConvertTo-Json
+        }   
+    Process
+        {
+            $response = Invoke-RestMethod -Uri $uri -Body $JSON -ContentType "application/json" -Method Put -WebSession $cookie
+        }
+    End
+        {
+            return $response
+        }
 }
 #endregion
 

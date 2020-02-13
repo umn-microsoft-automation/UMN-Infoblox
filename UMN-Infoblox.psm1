@@ -23,7 +23,7 @@ Function Connect-Infoblox{
     .SYNOPSIS
 	    Core function - retrieve cookie for API access to infoblox
     .DESCRIPTION
-	
+
     .PARAMETER InfobloxCred
         PS credential of user that has access
 
@@ -36,7 +36,7 @@ Function Connect-Infoblox{
     .EXAMPLE
 	    Connect-Infoblox -InfobloxCreds $infobloxCreds -uriBase $uriBase
     .NOTES
-	    For legacy automation systems dealing with cookies - 
+	    For legacy automation systems dealing with cookies -
         -UseBasicParsing is included on the InvokeWebRequest - needed parsing for Orchestrator
 #>
 
@@ -52,7 +52,7 @@ Function Connect-Infoblox{
 
         [switch]$SkipCertificateCheck
     )
-     
+
      if ($SkipCertificateCheck -and $PSVersionTable.PSVersion.Major -lt 6){
 add-type @"
     using System.Net;
@@ -81,13 +81,13 @@ Function Get-InfobloxAlias{
 .SYNOPSIS
 	Get Alias by FQDN
 .DESCRIPTION
-	
+
 .EXAMPLE
 	Get-InfobloxAlias -cookie $cookie -uriBase $uriBase -alias $alias
 .NOTES
 	General notes
 #>
-    
+
     [CmdletBinding()]
     Param
     (
@@ -100,7 +100,7 @@ Function Get-InfobloxAlias{
         [ValidateNotNullOrEmpty()]
         [string]$alias
     )
-    
+
     $uri  = "$uriBase/record:cname?name:=$alias"
     Invoke-RestMethod -uri $uri -Method Get -WebSession $cookie
 }
@@ -117,7 +117,7 @@ Function Get-InfobloxHost{
         Get-InfobloxHost -cookie $cookie -uriBase $uriBase -host_name $host_name
     .NOTES
         General notes
-#>    
+#>
     [CmdletBinding()]
     Param
     (
@@ -130,7 +130,7 @@ Function Get-InfobloxHost{
         [ValidateNotNullOrEmpty()]
         [string]$host_name
     )
-    
+
     $host_name = $host_name.ToLower()
     $uri  = "$uriBase/record:host?name=$host_name&_return_fields=aliases,ipv4addrs,ipv6addrs"
     Invoke-RestMethod -uri $uri -Method Get -WebSession $cookie
@@ -173,7 +173,7 @@ Function Get-InfobloxIPv4IP{
 .SYNOPSIS
 	Get reference to specific IPv4 address
 .DESCRIPTION
-	
+
 .EXAMPLE
 	Get-InflobloxIPv4IP -cookie $cookie -uriBase $uriBase -ipv4Address $ipv4Address
 .NOTES
@@ -210,7 +210,7 @@ Function Get-InfobloxIPv4IPs{
 .EXAMPLE
 	Get-InfobloxIPv4ips -cookie $cookie -uriBase $uriBase -ipv4net $ipv4net
 .NOTES
-	
+
 #>
 
     [CmdletBinding()]
@@ -243,7 +243,7 @@ Function Get-InfobloxIPv4Available{
 .EXAMPLE
 	Get-InfobloxIP4Available -cookie $cookie -uriBase $uriBase -ipv4net $ipv4net -domainSuffix -$domainSuffix
 .NOTES
-	
+
 #>
 
 
@@ -258,17 +258,17 @@ Function Get-InfobloxIPv4Available{
 
         [ValidateNotNullOrEmpty()]
         [string]$ipv4Net,
-        
+
         [ValidateNotNullOrEmpty()]
         [string]$domainSuffix
     )
-    
+
     $ipv4IPs = Get-InfobloxIPv4IPs -cookie $cookie -uriBase $uriBase -ipv4Net $ipv4Net
     $ipFound = $false
     foreach ($ip in $ipv4IPs){
         if ($ip.types -notcontains "HOST" -and $ip.lease_state -eq "FREE") # IF it returns a single entry this should be the bulk host.  < 1 = router, >1 its tied to host record so don't touch it
         {
-            $ipFound = $true 
+            $ipFound = $true
             return $ip.ip_address
         }
     }
@@ -283,11 +283,11 @@ Function Get-InfobloxIPv6IP{
 .SYNOPSIS
 	Get reference to specific IPv6 address
 .DESCRIPTION
-	
+
 .EXAMPLE
 	Get-InflobloxIPv6IP -cookie $cookie -uriBase $uriBase -ipv6Address $ipv6Address
 .NOTES
-	
+
 #>
 
 
@@ -316,12 +316,12 @@ function Get-InfobloxIPbyMac {
     .SYNOPSIS
         Get IP information by MAC address
     .DESCRIPTION
-        
+
     .EXAMPLE
         Get-InfobloxIPbyMac -cookie $cookie -uriBase $uriBase -ipv4net $ipv4net -mac $mac
     .NOTES
     #>
-    
+
     [CmdletBinding()]
     param(
 
@@ -353,7 +353,7 @@ Function New-InfobloxHost{
 .SYNOPSIS
 	Create a new Host object with IPv4 and IPv6 Address
 .DESCRIPTION
-	
+
 .EXAMPLE
 	New-InfobloxHost -cookie $cookie -uribase $uriBase -host_name $host_name -new_IPv4 $new_ipV4 -new_IPv6 $new_ipv6 -ipv4net $ipv4net
 .NOTES
@@ -410,7 +410,7 @@ Function New-InfobloxDhcpReservation{
 .EXAMPLE
 	New-InfobloxDhcpReservation -cookie $cookie -uriBase $uriBase -host_name $host_name -new_IPv4 $new_ipV4 -ipv4Net $ipv4net -mac $mac
 .NOTES
-	
+
 #>
     [CmdletBinding()]
     Param
@@ -436,7 +436,7 @@ Function New-InfobloxDhcpReservation{
     $host_name = $host_name.ToLower()
     $uri = "$uriBase/record:host"
     $JSON = @{name=$host_name;ipv4addrs=@(@{ipv4addr=$new_IPv4;configure_for_dhcp=$true;match_client="MAC_ADDRESS";mac=$mac});
-        extattrs=@{Custom1=@{value=$ipv4Net};Custom2=@{value="default 2 hour"}}} | ConvertTo-Json    
+        extattrs=@{Custom1=@{value=$ipv4Net};Custom2=@{value="default 2 hour"}}} | ConvertTo-Json
     Invoke-RestMethod -Uri $uri -Body $JSON -ContentType "application/json" -Method Post -WebSession $cookie
 
 }
@@ -448,14 +448,14 @@ Function Remove-InfobloxHost{
 .SYNOPSIS
 	Remove Host Record
 .DESCRIPTION
-	
+
 .EXAMPLE
 	Remove-InfobloxHost -cookie $cookie -uriBase $uriBase -host_name $host_name
 .NOTES
 	General notes
 #>
 
-  ## 
+  ##
 
     [CmdletBinding()]
     Param
@@ -476,7 +476,7 @@ Function Remove-InfobloxHost{
     # Aliases must be removed before removing the host record
     if ($ibHost.aliases){}## waiting for enough permissions to see all the aliases and remove them
     $host_ref = $ibHost._ref
-       
+
     $uri  = "$uriBase/$host_ref"
     #validate response
     if ((Invoke-RestMethod -uri $uri -Method Delete -WebSession $cookie) -ne $host_ref){throw "Infoblox Delete Failed"}
@@ -492,13 +492,13 @@ Function Set-InfobloxHostIPv6 {
 
         .DESCRIPTION
             Set IPv6 Address of Host Record
-        
+
         .PARAMETER cookie
             See connect-infoblox function to get authentication cookie
 
         .PARAMETER host_name
             The FQDN Host name in infoblox to be updated.
-            
+
         .PARAMETER ipv6address
             The IPv6 address to be set for an AAAA record.
 
@@ -507,33 +507,33 @@ Function Set-InfobloxHostIPv6 {
 
         .EXAMPLE
             Set-InfobloxHostIPv6 -cookie $cookie -uriBase $uriBase -host_name $host_name -ipv6Address
-        
+
         .NOTES
             General notes
-    #>    
+    #>
         [CmdletBinding()]
         Param
         (
             [ValidateNotNullOrEmpty()]
             [Microsoft.PowerShell.Commands.WebRequestSession]$cookie,
-            
+
             [ValidateNotNullOrEmpty()]
             [string]$ipv6Address,
 
             [ValidateNotNullOrEmpty()]
             [string]$uriBase,
-    
+
             [ValidateNotNullOrEmpty()]
             [string]$host_name
         )
-    
-    Begin 
+
+    Begin
         {
             $hostinfo = get-infobloxhost -cookie $cookie -uriBase $uriBase -host_name $host_name
             $hostref = $hostinfo._ref
             $uri = "$uriBase/$hostref"
             $JSON = @{ipv6addrs=@(@{ipv6addr=$ipv6Address})} | ConvertTo-Json
-        }   
+        }
     Process
         {
             $response = Invoke-RestMethod -Uri $uri -Body $JSON -ContentType "application/json" -Method Put -WebSession $cookie
@@ -544,5 +544,151 @@ Function Set-InfobloxHostIPv6 {
         }
 }
 #endregion
+
+Function Get-InfobloxNetwork {
+    <#
+    .SYNOPSIS
+        Get a network
+    .DESCRIPTION
+        Get a specified object from the Infoblox
+
+    .PARAMETER Cookie
+        Infoblox web session cookie
+
+    .PARAMETER Network
+        CIDR to get or search
+
+    .PARAMETER UriBase
+        The base Uri for the Infoblox including API version
+
+    .EXAMPLE
+        Get-InfobloxNetwork -cookie $cookie -uriBase $uriBase -network '10.0.0.0/25'
+
+    .EXAMPLE
+        Get-InfobloxNetwork -cookie $cookie -uriBase $uriBase -network '10.50.'
+    #>
+    [cmdletbinding()]
+    param(
+        [parameter(Mandatory)]
+        [Microsoft.PowerShell.Commands.WebRequestSession]$cookie,
+
+        [parameter(Mandatory)]
+        [string]$Network,
+
+        [parameter(Mandatory)]
+        [string]$uriBase
+    )
+
+    Begin{
+        $uri="$uriBase/network?network~=$network"}
+
+    Process{
+        $Return = Invoke-RestMethod -Method Get -Uri $uri -WebSession $cookie
+    }
+    End{
+        return $return
+    }
+}
+
+Function Get-InfobloxNetworkExtAttributes {
+    <#
+    .SYNOPSIS
+        Get network extensible attributes
+
+    .DESCRIPTION
+        Get extension properties for a network
+
+    .PARAMETER Cookie
+        Infoblox web session cookie
+
+    .PARAMETER Network
+        CIDR to get properties for.
+        Calls Get-InfobloxNetwork - will return multiple networks if a CIDR is not specific.
+
+    .PARAMETER UriBase
+        The base Uri for the Infoblox including API version
+
+    .EXAMPLE
+        Get-InfobloxNetworkExtAttributes -cookie $cookie -uriBase $uriBase -network '10.0.0.0/25'
+
+    #>
+    [cmdletbinding()]
+    param(
+        [parameter(Mandatory)]
+        [Microsoft.PowerShell.Commands.WebRequestSession]$cookie,
+
+        [parameter(Mandatory)]
+        [string]$Network,
+
+        [parameter(Mandatory)]
+        [string]$uriBase
+    )
+
+    Begin{
+        $networkRefs = Get-InfobloxNetwork -cookie $cookie -Network $network -uriBase $uriBase
+        $allData = @()
+        $properties = "extattrs,network,network_view,network_container,comment"
+    }
+    Process{
+        Foreach($item in $networkRefs){
+            $ref, $uri = $Null, $Null
+            $ref = $item._ref
+            $uri = "$uriBase/$ref`?_return_fields=$properties"
+            $test = Invoke-RestMethod -Method Get -Uri $uri -WebSession $cookie
+            $allData+=$test
+        }
+    }
+    End{
+        return $allData
+    }
+}
+
+Function Set-InfobloxNetworkExtAttributes{
+    <#
+    .SYNOPSIS
+        Set extensible attributes
+
+    .DESCRIPTION
+        Get extension properties for a network
+
+    .PARAMETER Cookie
+        Infoblox web session cookie
+
+    .PARAMETER ExtAttribute
+        The extensible attribute to set. Provide a json body in form
+        $extAttribute = @{"extattrs"=@{"$ExtAttributeKey"=@{"value"="$ExtAttributeValue"};"$extAttributeKey2"=@{"value"="$extAttributevalue2"}}} |convertto-json
+
+    .PARAMETER NetworkRef
+        See get-infobloxNetwork to get object reference.
+
+    .PARAMETER UriBase
+        The base Uri for the Infoblox including API version.
+    #>
+    [cmdletbinding()]
+    param(
+        [parameter(Mandatory)]
+        [Microsoft.PowerShell.Commands.WebRequestSession]$cookie,
+
+        [parameter(Mandatory)]
+        [string]$NetworkRef,
+
+        [parameter(Mandatory)]
+        [string]$ExtAttribute,
+
+        [parameter(Mandatory)]
+        [string]$uriBase
+    )
+
+    Begin{
+        $uri = "$baseUri/$networkRef`?_return_fields=extattrs&_return_as_object=1"
+    }
+    Process{
+        $return = Invoke-RestMethod -Method Put -Uri $uri -body $body -contentType 'application/json' -WebSession $cookie
+        $results = $return.result
+    }
+    End{
+        return $results
+    }
+}
 
 Export-ModuleMember -Function *

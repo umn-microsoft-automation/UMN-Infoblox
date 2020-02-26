@@ -563,9 +563,26 @@ Function Get-InfobloxNetwork {
 
     .EXAMPLE
         Get-InfobloxNetwork -cookie $cookie -uriBase $uriBase -network '10.0.0.0/25'
+        _ref         : network/asdf98a7kh5897afj98f7i2uh982hfakufh:10.0.0.0/25/default
+        network      : 10.0.0.0/25
+        network_view : default
 
     .EXAMPLE
         Get-InfobloxNetwork -cookie $cookie -uriBase $uriBase -network '10.50.'
+
+        _ref         : network/asdf98a7kh5897afj98f7i2uh982hfakufh:10.50.0.0/24/default
+        network      : 10.50.0.0/24
+        network_view : default
+
+        _ref         : network/asdf98a7kh5897afj98f7i2uh982hfakufh:10.50.1.0/24/default
+        network      : 10.50.1.0/24
+        network_view : default
+
+        _ref         : network/asdf98a7kh5897afj98f7i2uh982hfakufh:10.50.2.0/24/default
+        network      : 10.50.2.0/24
+        network_view : default
+
+        ...
     #>
     [cmdletbinding()]
     param(
@@ -609,8 +626,18 @@ Function Get-InfobloxNetworkExtAttributes {
         The base Uri for the Infoblox including API version
 
     .EXAMPLE
-        Get-InfobloxNetworkExtAttributes -cookie $cookie -uriBase $uriBase -network '10.0.0.0/25'
+        $test = Get-InfobloxNetworkExtAttributes -cookie $cookie -uriBase $uriBase -network '10.50.0.0/24'
 
+        $test.extattrs |format-list
+        _ref              : network/adsfa98sdf7a9osfj98ag7qouijht984jh9:10.50.0.0/24/default
+        extattrs          : @{Location=; Owner=}
+        network           : 10.50.0.0/24
+        network_container : 10.50.0.0/16
+        network_view      : default
+
+        $test.extattrs |format-list
+        Location : @{value=AWS}
+        Owner    : @{value=HSS}
     #>
     [cmdletbinding()]
     param(
@@ -620,6 +647,8 @@ Function Get-InfobloxNetworkExtAttributes {
         [parameter(Mandatory)]
         [string]$Network,
 
+        [string]$properties = "extattrs,network,network_view,network_container,comment",
+
         [parameter(Mandatory)]
         [string]$uriBase
     )
@@ -627,7 +656,6 @@ Function Get-InfobloxNetworkExtAttributes {
     Begin{
         $networkRefs = Get-InfobloxNetwork -cookie $cookie -Network $network -uriBase $uriBase
         $allData = @()
-        $properties = "extattrs,network,network_view,network_container,comment"
     }
     Process{
         Foreach($item in $networkRefs){
@@ -655,8 +683,19 @@ Function Set-InfobloxNetworkExtAttributes{
         Infoblox web session cookie
 
     .PARAMETER ExtAttribute
-        The extensible attribute to set. Provide a json body in form
-        $extAttribute = @{"extattrs"=@{"$ExtAttributeKey"=@{"value"="$ExtAttributeValue"};"$extAttributeKey2"=@{"value"="$extAttributevalue2"}}} |convertto-json
+        The extensible attribute to set. Provide a hashtable in format
+
+        $extAttributes = @{
+            "extattrs" = @{
+                "$ExtAttributeKey" = @{
+                    "value"="$ExtAttributeValue"};
+                "$extAttributeKey2" = @{
+                    "value"="$extAttributevalue2"
+                }
+            }
+        }
+
+        Add additional key value pairs as needed.
 
     .PARAMETER NetworkRef
         See get-infobloxNetwork to get object reference.
@@ -673,14 +712,15 @@ Function Set-InfobloxNetworkExtAttributes{
         [string]$NetworkRef,
 
         [parameter(Mandatory)]
-        [string]$ExtAttribute,
+        [hashtable]$ExtAttribute,
 
         [parameter(Mandatory)]
         [string]$uriBase
     )
 
     Begin{
-        $uri = "$baseUri/$networkRef`?_return_fields=extattrs&_return_as_object=1"
+        $body = $ExtAttribute |convertto-json
+        $uri = "$uriBase/$networkRef`?_return_fields=extattrs&_return_as_object=1"
     }
     Process{
         $return = Invoke-RestMethod -Method Put -Uri $uri -body $body -contentType 'application/json' -WebSession $cookie

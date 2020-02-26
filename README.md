@@ -1,6 +1,11 @@
 # UMN-Infoblox
- 
+
  # Releases
+
+ # 1.1.2 - 2-26-20
+ Add function to get network information.
+ Add function to get network extensible information
+ Add function to set extensible information.
 
  # 1.1.1 - 7-19-18
  Add function to update IPv6 AAAA record for existing host record.
